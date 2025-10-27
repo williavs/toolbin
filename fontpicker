@@ -1,0 +1,58 @@
+#!/bin/bash
+
+# fontpicker - Interactive font selector for wezterm using gum
+
+WEZTERM_CONFIG="$HOME/.config/wezterm/wezterm.lua"
+
+# Check if gum is installed
+if ! command -v gum &> /dev/null; then
+    echo "Error: gum is not installed. Install with: brew install gum"
+    exit 1
+fi
+
+# Check if wezterm is installed
+if ! command -v wezterm &> /dev/null; then
+    echo "Error: wezterm is not installed."
+    exit 1
+fi
+
+# Get list of fonts and clean up the output
+echo "Loading fonts..."
+FONTS=$(wezterm ls-fonts --list-system | grep -E "^\s*--" | sed 's/^[[:space:]]*-- //' | sort -u)
+
+# Let user select a font with gum
+SELECTED_FONT=$(echo "$FONTS" | gum filter --placeholder "Search for a font...")
+
+if [ -z "$SELECTED_FONT" ]; then
+    echo "No font selected. Exiting."
+    exit 0
+fi
+
+# Show confirmation
+gum style --foreground 212 --bold "Selected font: $SELECTED_FONT"
+
+# Ask for confirmation
+if ! gum confirm "Update wezterm config with this font?"; then
+    echo "Cancelled."
+    exit 0
+fi
+
+# Backup current config
+cp "$WEZTERM_CONFIG" "$WEZTERM_CONFIG.backup"
+
+# Update the font in wezterm config
+# This looks for the font.family line and replaces it
+if grep -q "font.family" "$WEZTERM_CONFIG"; then
+    sed -i.bak "s/font\.family = \".*\"/font.family = \"$SELECTED_FONT\"/" "$WEZTERM_CONFIG"
+elif grep -q "font = wezterm.font" "$WEZTERM_CONFIG"; then
+    sed -i.bak "s/font = wezterm\.font(['\"].*['\"]/font = wezterm.font('$SELECTED_FONT'/" "$WEZTERM_CONFIG"
+else
+    # If no font config exists, add it
+    echo "" >> "$WEZTERM_CONFIG"
+    echo "-- Font configuration (added by fontpicker)" >> "$WEZTERM_CONFIG"
+    echo "config.font = wezterm.font('$SELECTED_FONT')" >> "$WEZTERM_CONFIG"
+fi
+
+gum style --foreground 46 "✓ Font updated successfully!"
+echo "Config backed up to: $WEZTERM_CONFIG.backup"
+echo "Restart wezterm to see changes."
