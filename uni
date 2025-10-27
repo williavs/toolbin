@@ -1,0 +1,42 @@
+#!/bin/bash
+
+# uni - Display a wall of unicode symbols with gum styling
+# Programmatically generates unicode characters from various ranges
+
+# Default color (212 = pink/magenta)
+COLOR=${1:-212}
+
+# Generate unicode characters from interesting ranges
+# Using Python for proper unicode handling
+python3 << 'PYEOF' | gum style --foreground "$COLOR" --bold
+import sys
+
+# Unicode ranges for various symbol sets
+ranges = [
+    (0x2500, 0x257F),  # Box Drawing
+    (0x2580, 0x259F),  # Block Elements
+    (0x25A0, 0x25FF),  # Geometric Shapes (■□▲△○●★☆)
+    (0x2600, 0x26FF),  # Miscellaneous Symbols (☀☁☂☠☢☣⚡♀♂♠♣♥♦♪♫⚀-⚅)
+    (0x2700, 0x27BF),  # Dingbats (✀✂✈✓✗✠✡✨✩✪✫)
+    (0x2900, 0x297F),  # Supplemental Arrows-B
+    (0x2B00, 0x2BFF),  # Miscellaneous Symbols and Arrows
+    (0x1F300, 0x1F5FF), # Miscellaneous Symbols and Pictographs (🌀-🗿)
+    (0x1F600, 0x1F64F), # Emoticons (😀-🙏)
+    (0x1F680, 0x1F6FF), # Transport and Map Symbols (🚀-🛿)
+]
+
+# Generate characters
+chars = []
+for start, end in ranges:
+    for code in range(start, end):  # Generate all chars in range
+        try:
+            char = chr(code)
+            # Filter out control chars and invalid unicode
+            if char.isprintable():
+                chars.append(char)
+        except:
+            pass
+
+# Print with spaces
+print(' '.join(chars))
+PYEOF
