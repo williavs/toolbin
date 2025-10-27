@@ -17,11 +17,18 @@ if ! command -v wezterm &> /dev/null; then
 fi
 
 # Get list of fonts and clean up the output
+# Suppress stderr and extract just font names
 echo "Loading fonts..."
-FONTS=$(wezterm ls-fonts --list-system | grep -E "^\s*--" | sed 's/^[[:space:]]*-- //' | sort -u)
+FONTS=$(wezterm ls-fonts --list-system 2>/dev/null | grep -E "^\s*--" | sed 's/^[[:space:]]*-- //' | sed 's/"//g' | sort -u)
 
-# Let user select a font with gum
-SELECTED_FONT=$(echo "$FONTS" | gum filter --placeholder "Search for a font...")
+# Check if we got any fonts
+if [ -z "$FONTS" ]; then
+    echo "Error: Could not load fonts list"
+    exit 1
+fi
+
+# Let user select a font with gum (use </dev/tty to fix TTY issue)
+SELECTED_FONT=$(echo "$FONTS" | gum filter --placeholder "Search for a font..." < /dev/tty)
 
 if [ -z "$SELECTED_FONT" ]; then
     echo "No font selected. Exiting."
